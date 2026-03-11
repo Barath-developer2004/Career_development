@@ -8,8 +8,27 @@ const rateLimit = require("express-rate-limit");
 const dotenv = require("dotenv");
 const path = require("path");
 
-// Load env vars
-dotenv.config();
+// Load env vars — explicit path so it works regardless of CWD
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
+// ──────────────────────────────────────
+// ENV VALIDATION — fail fast with clear messages
+// ──────────────────────────────────────
+const requiredEnv = ["MONGO_URI", "JWT_SECRET", "JWT_REFRESH_SECRET"];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`\n✗ Missing required environment variables: ${missingEnv.join(", ")}`);
+  console.error("  → Copy server/.env.example to server/.env and fill in the values.");
+  console.error("  → See CONFIG.md for full setup instructions.\n");
+  process.exit(1);
+}
+
+const optionalEnv = ["GEMINI_API_KEY", "GROQ_API_KEY"];
+const hasAiKey = optionalEnv.some((key) => process.env[key]);
+if (!hasAiKey) {
+  console.warn("\n⚠ No AI API key found (GEMINI_API_KEY or GROQ_API_KEY).");
+  console.warn("  AI features (chat, project lab, ATS analysis) will not work.\n");
+}
 
 const connectDB = require("./config/db");
 const { errorHandler } = require("./middleware/errorHandler");
@@ -36,6 +55,9 @@ const app = express();
 // ──────────────────────────────────────
 // SECURITY & MIDDLEWARE
 // ──────────────────────────────────────
+
+// Trust proxy — required behind reverse proxies (Render, Railway, etc.)
+app.set("trust proxy", 1);
 
 // Helmet — security headers
 app.use(helmet());
@@ -133,7 +155,7 @@ app.get("/api/health", (req, res) => {
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"), {
   setHeaders: (res) => {
     res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Origin", process.env.CLIENT_URL || "http://localhost:3000");
   },
 }));
 app.use("/api/auth", authRoutes);
@@ -173,7 +195,7 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`
 ╔══════════════════════════════════════╗
 ║      CareerX API Server              ║
@@ -184,11 +206,43 @@ const startServer = async () => {
 ╚══════════════════════════════════════╝
       `);
     });
+
+    // ── Graceful shutdown ──────────────────────────────────────
+    const shutdown = (signal) => {
+      console.log(`\n⏻ ${signal} received. Shutting down gracefully...`);
+      server.close(() => {
+        const mongoose = require("mongoose");
+        mongoose.connection.close(false).then(() => {
+          console.log("✓ MongoDB connection closed.");
+          process.exit(0);
+        });
+      });
+      // Force exit after 10s if graceful shutdown hangs
+      setTimeout(() => {
+        console.error("✗ Forced exit after timeout.");
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);
   }
 };
+
+// ── Global crash handlers — prevent silent crashes ─────────────────────
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("✗ Unhandled Promise Rejection:", reason);
+  // Don't exit — log and continue. The error handler middleware catches most cases.
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("✗ Uncaught Exception:", error);
+  // Exit on uncaught exceptions — the process is in an undefined state
+  process.exit(1);
+});
 
 startServer();
 

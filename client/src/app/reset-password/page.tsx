@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Lock, ArrowLeft, ArrowRight, ShieldCheck, Loader2, CheckCircle2 } from "lucide-react";
 import { authService } from "@/lib/services";
 import { syncTokenCookie } from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -43,7 +44,10 @@ function ResetPasswordForm() {
     try {
       const res = await authService.resetPassword(token, password, confirmPassword);
       if (res.data?.accessToken) {
+        localStorage.setItem("accessToken", res.data.accessToken);
         syncTokenCookie(true);
+        // Sync the auth store so the dashboard guard doesn't redirect back to login
+        await useAuthStore.getState().fetchUser();
       }
       setIsSuccess(true);
       setTimeout(() => router.push("/dashboard"), 2000);

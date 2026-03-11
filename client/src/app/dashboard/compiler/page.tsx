@@ -206,7 +206,7 @@ export default function CompilerPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between rounded-xl border border-border/40 bg-card p-2">
+      <div className="flex items-center justify-between rounded-xl border border-border/40 bg-card p-2 relative z-30">
         {/* Language Selector */}
         <div className="relative">
           <button
@@ -222,7 +222,7 @@ export default function CompilerPage() {
           {showLangMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowLangMenu(false)} />
-              <div className="absolute top-full left-0 mt-1 z-20 w-48 rounded-xl border border-border/60 bg-popover p-1.5 shadow-xl">
+              <div className="absolute top-full left-0 mt-1 z-50 w-48 rounded-xl border border-border/60 bg-popover p-1.5 shadow-xl max-h-64 overflow-y-auto">
                 {languages.map((lang) => (
                   <button
                     key={lang.id}

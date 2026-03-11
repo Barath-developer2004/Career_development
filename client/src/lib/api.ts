@@ -33,6 +33,19 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Refresh token mutex — prevents parallel refresh attempts
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string) => void> = [];
+
+function onTokenRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
+function addRefreshSubscriber(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
 // Response interceptor — handle token refresh
 api.interceptors.response.use(
   (response) => response,
@@ -47,6 +60,18 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
+      if (isRefreshing) {
+        // Another refresh is in progress — wait for it
+        return new Promise((resolve) => {
+          addRefreshSubscriber((newToken: string) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      isRefreshing = true;
+
       try {
         const { data } = await axios.post(
           `${API_URL}/auth/refresh`,
@@ -58,13 +83,17 @@ api.interceptors.response.use(
         localStorage.setItem("accessToken", newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
+        onTokenRefreshed(newToken);
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed — force logout
+        refreshSubscribers = [];
         localStorage.removeItem("accessToken");
         syncTokenCookie(false);
         window.location.href = "/login";
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
 

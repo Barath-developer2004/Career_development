@@ -29,41 +29,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [ready, setReady] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     fetchUser().finally(() => setReady(true));
   }, [fetchUser]);
 
   useEffect(() => {
-    if (ready && !isLoading && !isAuthenticated) {
+    if (ready && !isLoading && !isAuthenticated && !redirecting) {
+      setRedirecting(true);
+      // Clear the token cookie so middleware also knows
+      if (typeof document !== "undefined") {
+        document.cookie = "has_token=;path=/;max-age=0";
+      }
       router.replace("/login");
     }
-  }, [ready, isLoading, isAuthenticated, router]);
+  }, [ready, isLoading, isAuthenticated, router, redirecting]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [children]);
 
-  if (!ready || isLoading) {
+  if (!ready || isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <Loader2 size={32} className="animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading CareerX...</p>
+          <p className="text-sm text-muted-foreground">{redirecting ? "Redirecting..." : "Loading CareerX..."}</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) return null;
-
   return (
     <SidebarContext.Provider value={{ mobileOpen, setMobileOpen, collapsed, setCollapsed }}>
       <div className="min-h-screen bg-background">
-        {/* Subtle background mesh */}
-        <div className="fixed inset-0 -z-10 gradient-mesh opacity-50" />
-        <div className="fixed inset-0 -z-10 dot-pattern opacity-30" />
+        {/* Background */}
+        <div className="fixed inset-0 -z-10 bg-background" />
 
         {/* Mobile overlay */}
         {mobileOpen && (

@@ -24,7 +24,6 @@ import {
   Sparkles,
   LogOut,
   Settings,
-  Crown,
   X,
   Map,
   Award,
@@ -117,19 +116,15 @@ export default function Sidebar() {
         "lg:left-0"
       )}
     >
-      {/* Sidebar glow accent */}
-      <div className="absolute top-0 right-0 w-px h-full bg-gradient-to-b from-primary/20 via-transparent to-primary/10" />
-
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-white/[0.06]">
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(238,70%,65%)] text-white font-bold text-sm shadow-[0_2px_12px_hsl(var(--primary)/0.4)] group-hover:shadow-[0_4px_20px_hsl(var(--primary)/0.5)] transition-shadow duration-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white font-bold text-sm">
             C
-            <div className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           {!collapsed && (
             <span className="text-lg font-bold tracking-tight text-white">
-              Career<span className="text-transparent bg-clip-text bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(238,70%,70%)]">X</span>
+              Career<span className="text-primary">X</span>
             </span>
           )}
         </Link>
@@ -146,6 +141,55 @@ export default function Sidebar() {
           <span className="hidden lg:inline">{collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}</span>
         </button>
       </div>
+
+      {/* Role Switcher */}
+      {!collapsed && (
+        <div className="px-4 py-3 border-b border-white/[0.04]">
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-white/30">Current Path</span>
+          </div>
+          <div className="flex gap-1.5 p-1 bg-black/20 rounded-xl border border-white/[0.04] relative">
+            <button
+              onClick={() => {
+                useAuthStore.getState().updateRole("job_seeker");
+                localStorage.setItem("selectedRole", "job_seeker");
+                router.refresh();
+              }}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 relative overflow-hidden",
+                userRole === "job_seeker"
+                  ? "text-blue-400 bg-white/[0.06] shadow-sm border border-white/[0.08]"
+                  : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"
+              )}
+            >
+              {userRole === "job_seeker" && (
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent" />
+              )}
+              <Briefcase size={12} className="relative z-10" />
+              <span className="relative z-10">Job Seeker</span>
+            </button>
+            <button
+              onClick={() => {
+                useAuthStore.getState().updateRole("higher_studies");
+                localStorage.setItem("selectedRole", "higher_studies");
+                router.refresh();
+              }}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 relative overflow-hidden",
+                userRole === "higher_studies"
+                  ? "text-teal-400 bg-white/[0.06] shadow-sm border border-white/[0.08]"
+                  : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"
+              )}
+            >
+              {userRole === "higher_studies" && (
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent" />
+              )}
+              <GraduationCap size={12} className="relative z-10" />
+              <span className="relative z-10">Exams</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
@@ -173,13 +217,13 @@ export default function Sidebar() {
                       title={collapsed ? item.name : undefined}
                     >
                       {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-gradient-to-b from-primary to-[hsl(238,70%,65%)] shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-primary" />
                       )}
                       <item.icon
                         size={17}
                         className={cn(
-                          "shrink-0 transition-all duration-300",
-                          isActive ? "text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]" : "text-white/30 group-hover:text-white/60"
+                          "shrink-0 transition-colors",
+                          isActive ? "text-primary" : "text-white/30 group-hover:text-white/60"
                         )}
                       />
                       {!collapsed && (
@@ -193,26 +237,6 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
-
-      {/* Upgrade Card */}
-      {!collapsed && (
-        <div className="mx-3 mb-3 rounded-2xl overflow-hidden relative max-lg:block">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/25 via-[hsl(238,70%,62%)]/20 to-[hsl(340,75%,55%)]/15" />
-          <div className="absolute inset-0 backdrop-blur-sm" />
-          <div className="relative p-4 border border-white/[0.08] rounded-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Crown size={15} className="text-yellow-400" />
-              <span className="text-xs font-bold text-white">Upgrade to Pro</span>
-            </div>
-            <p className="text-[11px] text-white/40 mb-3 leading-relaxed">
-              Unlock AI features, unlimited resumes, and more.
-            </p>
-            <button className="w-full rounded-xl bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(238,70%,65%)] py-2 text-xs font-semibold text-white hover:brightness-110 transition-all duration-300 shadow-[0_2px_12px_hsl(var(--primary)/0.3)] cursor-pointer">
-              Upgrade Now
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* User Section */}
       <div className="border-t border-white/[0.06] p-3">

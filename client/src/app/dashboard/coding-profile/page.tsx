@@ -18,6 +18,9 @@ import {
   ExternalLink,
   CheckCircle,
   AlertCircle,
+  Award,
+  Flame,
+  Hash,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -81,6 +84,45 @@ interface GitHubStats {
   topLanguages: { lang: string; count: number }[];
   profileUrl: string;
   createdAt: string;
+}
+
+interface GFGStats {
+  username: string;
+  totalSolved: number;
+  easy: number;
+  medium: number;
+  hard: number;
+  score: number;
+  streak: number;
+  institute: string;
+  instituteName?: string;
+  languages: string[];
+  profileUrl: string;
+}
+
+interface CodeChefStats {
+  username: string;
+  currentRating: number;
+  highestRating: number;
+  stars: string;
+  globalRank: number;
+  countryRank: number;
+  country: string;
+  problemsSolved: number;
+  contests: number;
+  profileUrl: string;
+}
+
+interface HackerRankStats {
+  username: string;
+  name: string;
+  country: string;
+  school: string;
+  level: number;
+  followers: number;
+  badges: { name: string; stars: number }[];
+  totalBadges: number;
+  profileUrl: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -171,6 +213,24 @@ export default function CodingProfilePage() {
   const [ghData, setGhData] = useState<GitHubStats | null>(null);
   const [ghError, setGhError] = useState<string | null>(null);
 
+  // GeeksForGeeks
+  const [gfgUsername, setGfgUsername] = useState("");
+  const [gfgLoading, setGfgLoading] = useState(false);
+  const [gfgData, setGfgData] = useState<GFGStats | null>(null);
+  const [gfgError, setGfgError] = useState<string | null>(null);
+
+  // CodeChef
+  const [ccUsername, setCcUsername] = useState("");
+  const [ccLoading, setCcLoading] = useState(false);
+  const [ccData, setCcData] = useState<CodeChefStats | null>(null);
+  const [ccError, setCcError] = useState<string | null>(null);
+
+  // HackerRank
+  const [hrUsername, setHrUsername] = useState("");
+  const [hrLoading, setHrLoading] = useState(false);
+  const [hrData, setHrData] = useState<HackerRankStats | null>(null);
+  const [hrError, setHrError] = useState<string | null>(null);
+
   // Restore saved usernames on mount
   useEffect(() => {
     const savedLcData = localStorage.getItem("cx_lc_data");
@@ -178,14 +238,24 @@ export default function CodingProfilePage() {
     const savedLc = localStorage.getItem("cx_lc_username");
     const savedGh = localStorage.getItem("cx_gh_username");
 
+    const savedGfgData = localStorage.getItem("cx_gfg_data");
+    const savedGfg = localStorage.getItem("cx_gfg_username");
+    const savedCcData = localStorage.getItem("cx_cc_data");
+    const savedCc = localStorage.getItem("cx_cc_username");
+    const savedHrData = localStorage.getItem("cx_hr_data");
+    const savedHr = localStorage.getItem("cx_hr_username");
+
     if (savedLc) setLcUsername(savedLc);
     if (savedGh) setGhUsername(savedGh);
-    if (savedLcData) {
-      try { setLcData(JSON.parse(savedLcData)); } catch { /* ignore */ }
-    }
-    if (savedGhData) {
-      try { setGhData(JSON.parse(savedGhData)); } catch { /* ignore */ }
-    }
+    if (savedGfg) setGfgUsername(savedGfg);
+    if (savedCc) setCcUsername(savedCc);
+    if (savedHr) setHrUsername(savedHr);
+
+    if (savedLcData) { try { setLcData(JSON.parse(savedLcData)); } catch { /* ignore */ } }
+    if (savedGhData) { try { setGhData(JSON.parse(savedGhData)); } catch { /* ignore */ } }
+    if (savedGfgData) { try { setGfgData(JSON.parse(savedGfgData)); } catch { /* ignore */ } }
+    if (savedCcData) { try { setCcData(JSON.parse(savedCcData)); } catch { /* ignore */ } }
+    if (savedHrData) { try { setHrData(JSON.parse(savedHrData)); } catch { /* ignore */ } }
   }, []);
 
   // Load internal compiler stats
@@ -240,6 +310,63 @@ export default function CodingProfilePage() {
     }
   }
 
+  async function fetchGFG() {
+    if (!gfgUsername.trim()) return;
+    setGfgLoading(true);
+    setGfgError(null);
+    try {
+      const res = await codingProfileService.getGeeksForGeeks(gfgUsername.trim());
+      setGfgData(res.data);
+      localStorage.setItem("cx_gfg_username", gfgUsername.trim());
+      localStorage.setItem("cx_gfg_data", JSON.stringify(res.data));
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not fetch GFG profile.";
+      setGfgError(msg);
+    } finally {
+      setGfgLoading(false);
+    }
+  }
+
+  async function fetchCodeChef() {
+    if (!ccUsername.trim()) return;
+    setCcLoading(true);
+    setCcError(null);
+    try {
+      const res = await codingProfileService.getCodeChef(ccUsername.trim());
+      setCcData(res.data);
+      localStorage.setItem("cx_cc_username", ccUsername.trim());
+      localStorage.setItem("cx_cc_data", JSON.stringify(res.data));
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not fetch CodeChef profile.";
+      setCcError(msg);
+    } finally {
+      setCcLoading(false);
+    }
+  }
+
+  async function fetchHackerRank() {
+    if (!hrUsername.trim()) return;
+    setHrLoading(true);
+    setHrError(null);
+    try {
+      const res = await codingProfileService.getHackerRank(hrUsername.trim());
+      setHrData(res.data);
+      localStorage.setItem("cx_hr_username", hrUsername.trim());
+      localStorage.setItem("cx_hr_data", JSON.stringify(res.data));
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not fetch HackerRank profile.";
+      setHrError(msg);
+    } finally {
+      setHrLoading(false);
+    }
+  }
+
   // Derived data for internal compiler stats
   const totalSolved      = stats?.totalSolved ?? 0;
   const totalSubmissions = stats?.totalSubmissions ?? 0;
@@ -269,7 +396,7 @@ export default function CodingProfilePage() {
       <div>
         <h1 className="text-3xl font-black tracking-tight">Coding Profile Analyzer</h1>
         <p className="text-muted-foreground/70">
-          Connect your LeetCode &amp; GitHub to see your real stats alongside CareerX compiler data.
+          Connect your LeetCode, GitHub, GFG, CodeChef &amp; HackerRank to see your real stats alongside CareerX compiler data.
         </p>
       </div>
 
@@ -284,7 +411,7 @@ export default function CodingProfilePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <PlatformInput
               icon={<span className="text-amber-500 font-black text-sm">LC</span>}
               label="LeetCode Username"
@@ -306,6 +433,39 @@ export default function CodingProfilePage() {
               loading={ghLoading}
               loaded={!!ghData}
               error={ghError}
+            />
+            <PlatformInput
+              icon={<span className="text-emerald-500 font-black text-sm">GFG</span>}
+              label="GeeksForGeeks Username"
+              placeholder="e.g. geeksuser"
+              value={gfgUsername}
+              onChange={setGfgUsername}
+              onFetch={fetchGFG}
+              loading={gfgLoading}
+              loaded={!!gfgData}
+              error={gfgError}
+            />
+            <PlatformInput
+              icon={<span className="text-yellow-600 font-black text-sm">CC</span>}
+              label="CodeChef Username"
+              placeholder="e.g. admin"
+              value={ccUsername}
+              onChange={setCcUsername}
+              onFetch={fetchCodeChef}
+              loading={ccLoading}
+              loaded={!!ccData}
+              error={ccError}
+            />
+            <PlatformInput
+              icon={<span className="text-green-500 font-black text-sm">HR</span>}
+              label="HackerRank Username"
+              placeholder="e.g. hackerrank_user"
+              value={hrUsername}
+              onChange={setHrUsername}
+              onFetch={fetchHackerRank}
+              loading={hrLoading}
+              loaded={!!hrData}
+              error={hrError}
             />
           </div>
         </CardContent>
@@ -466,6 +626,146 @@ export default function CodingProfilePage() {
               </CardContent>
             </Card>
           </div>
+        </div>
+      )}
+
+      {/* ── GeeksForGeeks Stats ──────────────────────────────────────────── */}
+      {gfgData && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <span className="text-emerald-500 font-black">GFG</span>
+            GeeksForGeeks —{" "}
+            <a href={gfgData.profileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+              {gfgData.username} <ExternalLink size={12} />
+            </a>
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Problems Solved", value: gfgData.totalSolved.toString(), sub: gfgData.easy || gfgData.medium || gfgData.hard ? `${gfgData.easy}E · ${gfgData.medium}M · ${gfgData.hard}H` : "Total solved", color: "text-emerald-500" },
+              { label: "Coding Score", value: gfgData.score.toString(), sub: "Overall score", color: "text-blue-400" },
+              { label: "Longest Streak", value: gfgData.streak.toString(), sub: "POTD streak", color: "text-amber-400" },
+              { label: "Institute Rank", value: gfgData.institute || "N/A", sub: gfgData.instituteName || "Institute ranking", color: "text-violet-400" },
+            ].map((s) => (
+              <Card key={s.label} className="hover-lift">
+                <CardContent className="p-4">
+                  <p className={`stat-number text-2xl font-black ${s.color}`}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">{s.label}</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1">{s.sub}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {(gfgData.easy > 0 || gfgData.medium > 0 || gfgData.hard > 0) && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Difficulty Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { label: "Easy", count: gfgData.easy, color: "bg-emerald-500", text: "text-emerald-500" },
+                  { label: "Medium", count: gfgData.medium, color: "bg-amber-400", text: "text-amber-400" },
+                  { label: "Hard", count: gfgData.hard, color: "bg-red-500", text: "text-red-500" },
+                ].map((d) => (
+                  <div key={d.label}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className={`font-medium ${d.text}`}>{d.label}</span>
+                      <span className="text-muted-foreground">{d.count} solved</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${d.color}`}
+                        style={{ width: gfgData.totalSolved > 0 ? `${Math.round((d.count / gfgData.totalSolved) * 100)}%` : "0%" }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          )}
+        </div>
+      )}
+
+      {/* ── CodeChef Stats ───────────────────────────────────────────────── */}
+      {ccData && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <span className="text-yellow-600 font-black">CC</span>
+            CodeChef —{" "}
+            <a href={ccData.profileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+              {ccData.username} <ExternalLink size={12} />
+            </a>
+            {ccData.stars && ccData.stars !== "unrated" && (
+              <Badge variant="outline" className="text-xs text-yellow-500 border-yellow-500/40">
+                {ccData.stars}
+              </Badge>
+            )}
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Current Rating", value: ccData.currentRating.toString(), sub: ccData.stars || "Unrated", color: "text-yellow-500" },
+              { label: "Highest Rating", value: ccData.highestRating.toString(), sub: "Peak rating", color: "text-emerald-500" },
+              { label: "Problems Solved", value: ccData.problemsSolved.toString(), sub: "Total solved", color: "text-blue-400" },
+              { label: "Country", value: ccData.country || "—", sub: ccData.contests > 0 ? `${ccData.contests} contests` : "No contests", color: "text-violet-400" },
+            ].map((s) => (
+              <Card key={s.label} className="hover-lift">
+                <CardContent className="p-4">
+                  <p className={`stat-number text-2xl font-black ${s.color}`}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">{s.label}</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1">{s.sub}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── HackerRank Stats ─────────────────────────────────────────────── */}
+      {hrData && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <span className="text-green-500 font-black">HR</span>
+            HackerRank —{" "}
+            <a href={hrData.profileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+              {hrData.username} <ExternalLink size={12} />
+            </a>
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Level", value: hrData.level.toString(), sub: hrData.name || hrData.username, color: "text-green-500" },
+              { label: "Followers", value: hrData.followers.toLocaleString(), sub: hrData.country || "Global", color: "text-blue-400" },
+              { label: "Total Badges", value: hrData.totalBadges.toString(), sub: "Earned badges", color: "text-amber-400" },
+              { label: "School", value: hrData.school || "—", sub: "Institution", color: "text-violet-400" },
+            ].map((s) => (
+              <Card key={s.label} className="hover-lift">
+                <CardContent className="p-4">
+                  <p className={`stat-number text-2xl font-black ${s.color} ${s.label === "School" ? "text-sm" : ""}`}>{s.value}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">{s.label}</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1">{s.sub}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {hrData.badges.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Award size={14} className="text-green-500" /> Badges
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {hrData.badges.map((b) => (
+                    <Badge key={b.name} variant="outline" className="text-xs gap-1">
+                      <Star size={10} className="text-amber-400" />
+                      {b.name} ({b.stars}★)
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 

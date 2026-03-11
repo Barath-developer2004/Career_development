@@ -11,6 +11,67 @@ const {
   setTokenCookies,
 } = require("../middleware/auth");
 
+// ── Helper: finish OAuth login (shared by Google & GitHub) ──
+async function finishOAuthLogin(res, { email, fullName, avatar, provider, providerId }) {
+  let user = await User.findOne({ email });
+
+  if (user) {
+    // Existing user — update provider info if they signed up via local before
+    if (!user.providerId) {
+      user.provider = provider;
+      user.providerId = providerId;
+    }
+    if (avatar && !user.avatar) user.avatar = avatar;
+  } else {
+    // New user
+    user = await User.create({
+      fullName,
+      email,
+      provider,
+      providerId,
+      avatar: avatar || "",
+      role: "job_seeker",
+    });
+    user.totalXP = 50;
+    user.calculateProfileCompletion();
+    await user.save();
+    await Activity.create({ user: user._id, action: "Account created via " + provider, type: "general", xpEarned: 50 });
+  }
+
+  // Update login streak
+  const now = new Date();
+  const lastLogin = user.lastLoginDate;
+  if (lastLogin) {
+    const diffHours = (now - lastLogin) / (1000 * 60 * 60);
+    if (diffHours >= 20 && diffHours <= 48) {
+      user.loginStreak += 1;
+      user.longestStreak = Math.max(user.longestStreak, user.loginStreak);
+      user.totalXP += 10;
+    } else if (diffHours > 48) {
+      user.loginStreak = 1;
+    }
+  } else {
+    user.loginStreak = 1;
+  }
+  user.lastLoginDate = now;
+  user.activeScore += 5;
+
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  setTokenCookies(res, accessToken, refreshToken);
+
+  await Activity.create({ user: user._id, action: `Logged in via ${provider}`, type: "general", xpEarned: 10 });
+
+  const userResponse = user.toObject();
+  delete userResponse.password;
+  delete userResponse.refreshToken;
+
+  return { userResponse, accessToken };
+}
+
 // ──────────────────────────────────────
 // POST /api/auth/signup
 // ──────────────────────────────────────
@@ -190,7 +251,7 @@ exports.refreshToken = asyncHandler(async (req, res) => {
   // Verify refresh token
   let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET, { algorithms: ["HS256"] });
   } catch {
     throw new AppError("Invalid or expired refresh token.", 401);
   }
@@ -317,5 +378,136 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     success: true,
     message: "Password reset successful!",
     data: { accessToken },
+  });
+});
+
+// ──────────────────────────────────────
+// POST /api/auth/google — Google OAuth
+// ──────────────────────────────────────
+exports.googleLogin = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  if (!code) throw new AppError("Authorization code is required", 400);
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+
+  if (!clientId || !clientSecret) {
+    throw new AppError("Google OAuth is not configured on this server.", 500);
+  }
+
+  // Exchange authorization code for tokens
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: `${clientUrl}/login`,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  const tokenData = await tokenRes.json();
+  if (!tokenRes.ok || !tokenData.access_token) {
+    throw new AppError("Failed to exchange Google authorization code.", 401);
+  }
+
+  // Fetch user info from Google
+  const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+    headers: { Authorization: `Bearer ${tokenData.access_token}` },
+  });
+  const gUser = await userInfoRes.json();
+
+  if (!gUser.email) {
+    throw new AppError("Could not retrieve email from Google.", 401);
+  }
+
+  const { userResponse, accessToken } = await finishOAuthLogin(res, {
+    email: gUser.email,
+    fullName: gUser.name || gUser.email.split("@")[0],
+    avatar: gUser.picture || "",
+    provider: "google",
+    providerId: gUser.id,
+  });
+
+  res.json({
+    success: true,
+    message: "Google login successful!",
+    data: { user: userResponse, accessToken },
+  });
+});
+
+// ──────────────────────────────────────
+// POST /api/auth/github — GitHub OAuth
+// ──────────────────────────────────────
+exports.githubLogin = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  if (!code) throw new AppError("Authorization code is required", 400);
+
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new AppError("GitHub OAuth is not configured on this server.", 500);
+  }
+
+  // Exchange code for access token
+  const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+    }),
+  });
+
+  const tokenData = await tokenRes.json();
+  if (!tokenData.access_token) {
+    throw new AppError("Failed to exchange GitHub authorization code.", 401);
+  }
+
+  // Fetch GitHub user profile
+  const ghHeaders = {
+    Authorization: `Bearer ${tokenData.access_token}`,
+    "User-Agent": "CareerX-App",
+  };
+  const [userRes, emailsRes] = await Promise.all([
+    fetch("https://api.github.com/user", { headers: ghHeaders }),
+    fetch("https://api.github.com/user/emails", { headers: ghHeaders }),
+  ]);
+
+  const ghUser = await userRes.json();
+  const emails = emailsRes.ok ? await emailsRes.json() : [];
+
+  // Get primary verified email
+  const primaryEmail =
+    (Array.isArray(emails) && emails.find((e) => e.primary && e.verified)?.email) ||
+    ghUser.email;
+
+  if (!primaryEmail) {
+    throw new AppError(
+      "No verified email found on your GitHub account. Please add a verified email to GitHub.",
+      401
+    );
+  }
+
+  const { userResponse, accessToken } = await finishOAuthLogin(res, {
+    email: primaryEmail,
+    fullName: ghUser.name || ghUser.login,
+    avatar: ghUser.avatar_url || "",
+    provider: "github",
+    providerId: String(ghUser.id),
+  });
+
+  res.json({
+    success: true,
+    message: "GitHub login successful!",
+    data: { user: userResponse, accessToken },
   });
 });

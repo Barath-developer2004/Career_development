@@ -85,7 +85,7 @@ export default function InterviewLabPage() {
   useEffect(() => {
     interviewService.getHistory()
       .then((res) => setSessions(res.data?.sessions || []))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setHistoryLoading(false));
   }, []);
 
@@ -125,6 +125,13 @@ export default function InterviewLabPage() {
     }
   }, []);
 
+  const stopMedia = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
   const toggleCamera = useCallback(async () => {
     const next = !cameraOn;
     setCameraOn(next);
@@ -146,14 +153,18 @@ export default function InterviewLabPage() {
   }, [cameraOn, micOn, startMedia]);
 
   useEffect(() => {
-    if (stage === "setup") startMedia(cameraOn, micOn);
-    return () => {
-      if (stage !== "setup" && stage !== "interview" && streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
-    };
+    if (stage === "setup") {
+      startMedia(cameraOn, micOn);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
+
+  // Ensure media is ALWAYS stopped if the user completely navigates away from the page
+  useEffect(() => {
+    return () => {
+      stopMedia();
+    };
+  }, [stopMedia]);
 
   useEffect(() => {
     if (stage === "interview" && streamRef.current && interviewVideoRef.current) {
@@ -190,12 +201,30 @@ export default function InterviewLabPage() {
       const newAnswers = [...answers];
       newAnswers[currentQ] = answerText;
       setAnswers(newAnswers);
-      setAnswerText("");
-      if (currentQ < questions.length - 1) setCurrentQ(currentQ + 1);
-      else await endInterview();
+      // Removed setAnswerText("") here so when it jumps to the next question, 
+      // the value is properly derived from the answers buffer.
+
+      if (currentQ < questions.length - 1) {
+        const nextQ = currentQ + 1;
+        setCurrentQ(nextQ);
+        setAnswerText(newAnswers[nextQ] || "");
+      } else {
+        await endInterview();
+      }
     } catch (e) {
       console.error("Submit answer error", e);
     }
+  };
+
+  const handleQuestionChange = (newIndex: number) => {
+    // Save current draft answer to the answers array before switching
+    if (answerText.trim() !== answers[currentQ]) {
+      const newAnswers = [...answers];
+      newAnswers[currentQ] = answerText;
+      setAnswers(newAnswers);
+    }
+    setCurrentQ(newIndex);
+    setAnswerText(answers[newIndex] || "");
   };
 
   const endInterview = async () => {
@@ -218,6 +247,7 @@ export default function InterviewLabPage() {
       }
       setFeedback(raw);
       setStage("feedback");
+      stopMedia();
     } catch (e) {
       console.error("Complete interview error", e);
     } finally {
@@ -226,6 +256,7 @@ export default function InterviewLabPage() {
   };
 
   const backToOverview = () => {
+    stopMedia();
     setStage("overview");
     setFeedback(null);
     setQuestions([]);
@@ -234,7 +265,7 @@ export default function InterviewLabPage() {
     // Refresh history
     interviewService.getHistory()
       .then((res) => setSessions(res.data?.sessions || []))
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const overallScore = (feedback?.overallScore as number) || 0;
@@ -345,7 +376,7 @@ export default function InterviewLabPage() {
       {/* ═══════════════════ SETUP STAGE ═══════════════════ */}
       {stage === "setup" && (
         <div className="max-w-4xl mx-auto space-y-6">
-          <Button variant="ghost" size="sm" className="gap-2 mb-2" onClick={() => setStage("overview")}>
+          <Button variant="ghost" size="sm" className="gap-2 mb-2" onClick={backToOverview}>
             ← Back to overview
           </Button>
           <Card>
@@ -440,11 +471,10 @@ export default function InterviewLabPage() {
                   {questions.map((q, i) => (
                     <button
                       key={i}
-                      onClick={() => { setCurrentQ(i); setAnswerText(answers[i] || ""); }}
-                      className={`w-full text-left rounded-lg px-3 py-2.5 text-xs transition-all cursor-pointer ${
-                        i === currentQ ? "bg-primary/10 text-primary border border-primary/30" :
+                      onClick={() => handleQuestionChange(i)}
+                      className={`w-full text-left rounded-lg px-3 py-2.5 text-xs transition-all cursor-pointer ${i === currentQ ? "bg-primary/10 text-primary border border-primary/30" :
                         answers[i] ? "bg-success/5 text-success" : "text-muted-foreground hover:bg-muted"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         {answers[i] ? <CheckCircle2 size={12} /> : <span className="w-3 text-center">{i + 1}</span>}
@@ -530,13 +560,12 @@ export default function InterviewLabPage() {
                     </div>
                     <div className="h-2.5 rounded-full bg-muted overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-700 ${
-                          (cat.score as number) >= 8 ? "bg-green-500" : (cat.score as number) >= 6 ? "bg-yellow-500" : "bg-red-500"
-                        }`}
+                        className={`h-full rounded-full transition-all duration-700 ${(cat.score as number) >= 8 ? "bg-green-500" : (cat.score as number) >= 6 ? "bg-yellow-500" : "bg-red-500"
+                          }`}
                         style={{ width: `${((cat.score as number) / 10) * 100}%` }}
                       />
                     </div>
-                    {cat.feedback && <p className="text-xs text-muted-foreground">{cat.feedback as string}</p>}
+                    {!!cat.feedback && <p className="text-xs text-muted-foreground">{String(cat.feedback)}</p>}
                   </div>
                 ))}
               </CardContent>

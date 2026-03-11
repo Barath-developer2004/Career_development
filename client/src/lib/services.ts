@@ -66,17 +66,11 @@ export interface AuthResponse {
 export const authService = {
   async signup(payload: SignupPayload): Promise<AuthResponse> {
     const { data } = await api.post("/auth/signup", payload);
-    if (data.data?.accessToken) {
-      localStorage.setItem("accessToken", data.data.accessToken);
-    }
     return data;
   },
 
   async login(payload: LoginPayload): Promise<AuthResponse> {
     const { data } = await api.post("/auth/login", payload);
-    if (data.data?.accessToken) {
-      localStorage.setItem("accessToken", data.data.accessToken);
-    }
     return data;
   },
 
@@ -105,6 +99,16 @@ export const authService = {
     }
     return data;
   },
+
+  async googleLogin(code: string): Promise<AuthResponse> {
+    const { data } = await api.post("/auth/google", { code });
+    return data;
+  },
+
+  async githubLogin(code: string): Promise<AuthResponse> {
+    const { data } = await api.post("/auth/github", { code });
+    return data;
+  },
 };
 
 // ── User / Profile ──
@@ -117,6 +121,11 @@ export const userService = {
 
   async updateProfile(updates: Partial<User>) {
     const { data } = await api.put("/users/profile", updates);
+    return data;
+  },
+
+  async updateRole(role: "job_seeker" | "higher_studies") {
+    const { data } = await api.patch("/users/role", { role });
     return data;
   },
 
@@ -133,7 +142,7 @@ export const userService = {
   async getActivityHeatmap() {
     const { data } = await api.get("/users/activity/heatmap");
     return data;
- },
+  },
 
   async getXPHistory(months = 6) {
     const { data } = await api.get(`/users/xp-history?months=${months}`);
@@ -476,6 +485,18 @@ export const codingProfileService = {
   },
   async getGitHub(username: string) {
     const { data } = await api.get(`/coding-profile/github/${username}`);
+    return data;
+  },
+  async getGeeksForGeeks(username: string) {
+    const { data } = await api.get(`/coding-profile/gfg/${username}`);
+    return data;
+  },
+  async getCodeChef(username: string) {
+    const { data } = await api.get(`/coding-profile/codechef/${username}`);
+    return data;
+  },
+  async getHackerRank(username: string) {
+    const { data } = await api.get(`/coding-profile/hackerrank/${username}`);
     return data;
   },
 };

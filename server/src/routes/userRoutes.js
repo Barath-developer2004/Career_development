@@ -10,6 +10,7 @@ router.use(protect);
 
 router.get("/profile", userController.getProfile);
 router.put("/profile", updateProfileValidation, userController.updateProfile);
+router.patch("/role", userController.updateRole);
 router.get("/stats", userController.getStats);
 router.get("/activity/recent", userController.getRecentActivity);
 router.get("/activity/heatmap", userController.getActivityHeatmap);

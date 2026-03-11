@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Bell, Search, Moon, Sun, Command, Menu } from "lucide-react";
+import { Bell, Search, Moon, Sun, Command, Menu, Flame, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,25 +51,25 @@ export default function Header() {
       {/* Right Actions */}
       <div className="flex items-center gap-1.5">
         {/* Streak Badge */}
-        <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/15 px-3 py-1.5 mr-1">
-          <span className="text-sm">🔥</span>
-          <span className="text-xs font-bold text-orange-500">{user?.loginStreak ?? 0}</span>
+        <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-muted/60 border border-border/60 px-3 py-1.5 mr-1">
+          <Flame size={13} className="text-orange-500" />
+          <span className="text-xs font-semibold text-muted-foreground">{user?.loginStreak ?? 0}</span>
         </div>
 
         {/* Theme Toggle */}
-        <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-xl h-9 w-9 text-muted-foreground hover:text-foreground transition-transform duration-300 hover:rotate-12 active:scale-90">
-          {dark ? <Sun size={16} className="transition-transform duration-500 rotate-0" /> : <Moon size={16} className="transition-transform duration-500 rotate-0" />}
+        <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-lg h-9 w-9 text-muted-foreground hover:text-foreground">
+          {dark ? <Sun size={16} /> : <Moon size={16} />}
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="rounded-xl h-9 w-9 relative text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-105 active:scale-95">
+        <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9 relative text-muted-foreground hover:text-foreground">
           <Bell size={16} />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[hsl(var(--chart-4))] ring-2 ring-background animate-pulse" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-background" />
         </Button>
 
         {/* XP Badge */}
         <Badge variant="default" className="ml-1 hidden sm:inline-flex gap-1 py-1 px-3">
-          <span className="text-xs">⚡</span> <span className="stat-number">{user?.totalXP?.toLocaleString() ?? "0"}</span>
+          <Zap size={12} /> <span className="stat-number">{user?.totalXP?.toLocaleString() ?? "0"} XP</span>
         </Badge>
       </div>
     </header>

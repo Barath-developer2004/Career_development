@@ -56,19 +56,19 @@ const skillColors = [
 ];
 
 const jobSeekerQuickActions = [
-  { label: "Build Resume", desc: "AI-powered builder", href: "/dashboard/resume-builder", icon: FileText, color: "from-blue-500 to-cyan-400" },
-  { label: "Practice Code", desc: "DSA challenges", href: "/dashboard/compiler", icon: Code2, color: "from-emerald-500 to-green-400" },
-  { label: "Mock Interview", desc: "AI feedback", href: "/dashboard/interview-lab", icon: Target, color: "from-violet-500 to-purple-400" },
-  { label: "Find Jobs", desc: "Search platforms", href: "/dashboard/jobs", icon: Briefcase, color: "from-orange-500 to-amber-400" },
+  { label: "Build Resume", desc: "AI-powered builder", href: "/dashboard/resume-builder", icon: FileText, color: "text-blue-500 bg-blue-500/10" },
+  { label: "Practice Code", desc: "DSA challenges", href: "/dashboard/compiler", icon: Code2, color: "text-emerald-500 bg-emerald-500/10" },
+  { label: "Mock Interview", desc: "AI feedback", href: "/dashboard/interview-lab", icon: Target, color: "text-violet-500 bg-violet-500/10" },
+  { label: "Find Jobs", desc: "Search platforms", href: "/dashboard/jobs", icon: Briefcase, color: "text-orange-500 bg-orange-500/10" },
 ];
 
 const higherStudiesQuickActions = [
-  { label: "Exam Prep", desc: "GATE, CAT, GRE", href: "/dashboard/exam-prep", icon: BookOpen, color: "from-teal-500 to-emerald-400" },
-  { label: "Practice MCQs", desc: "Exam questions", href: "/dashboard/exam-mcq", icon: Target, color: "from-violet-500 to-purple-400" },
-  { label: "University Finder", desc: "Find best-fit unis", href: "/dashboard/university-finder", icon: Search, color: "from-blue-500 to-cyan-400" },
-  { label: "Scholarships", desc: "Find funding", href: "/dashboard/scholarship-finder", icon: Award, color: "from-amber-500 to-yellow-400" },
-  { label: "Study Planner", desc: "Plan & focus", href: "/dashboard/study-planner", icon: CalendarDays, color: "from-emerald-500 to-green-400" },
-  { label: "SOP Writer", desc: "AI-powered SOP", href: "/dashboard/sop-writer", icon: FileEdit, color: "from-violet-500 to-purple-400" },
+  { label: "Exam Prep", desc: "GATE, CAT, GRE", href: "/dashboard/exam-prep", icon: BookOpen, color: "text-teal-500 bg-teal-500/10" },
+  { label: "Practice MCQs", desc: "Exam questions", href: "/dashboard/exam-mcq", icon: Target, color: "text-violet-500 bg-violet-500/10" },
+  { label: "University Finder", desc: "Find best-fit unis", href: "/dashboard/university-finder", icon: Search, color: "text-blue-500 bg-blue-500/10" },
+  { label: "Scholarships", desc: "Find funding", href: "/dashboard/scholarship-finder", icon: Award, color: "text-amber-500 bg-amber-500/10" },
+  { label: "Study Planner", desc: "Plan & focus", href: "/dashboard/study-planner", icon: CalendarDays, color: "text-emerald-500 bg-emerald-500/10" },
+  { label: "SOP Writer", desc: "AI-powered SOP", href: "/dashboard/sop-writer", icon: FileEdit, color: "text-violet-500 bg-violet-500/10" },
 ];
 
 const activityIconMap: Record<string, { icon: typeof Code2; color: string; bg: string }> = {
@@ -153,10 +153,10 @@ export default function DashboardPage() {
   const jThisWeek = (stats?.jobsAppliedThisWeek as number) || 0;
 
   const statCards = [
-    { label: "Active Score", value: String(user?.activeScore ?? 0), change: `${(user?.activeScore as number) > 0 ? "+" : ""}${user?.activeScore ?? 0} XP`, icon: Zap, gradient: "from-violet-500 to-purple-600" },
-    { label: "Problems Solved", value: String(user?.problemsSolved ?? 0), change: pThisWeek > 0 ? `+${pThisWeek} this week` : "this week", icon: Code2, gradient: "from-emerald-500 to-green-600" },
-    { label: "Global Rank", value: `#${user?.globalRank ?? "—"}`, change: `Top ${Math.max(1, Math.min(100, (user?.globalRank as number) || 1))}`, icon: Trophy, gradient: "from-amber-500 to-yellow-600" },
-    { label: "Jobs Applied", value: String(user?.jobsApplied ?? 0), change: jThisWeek > 0 ? `+${jThisWeek} this week` : "this week", icon: Briefcase, gradient: "from-orange-500 to-red-500" },
+    { label: "Active Score", value: String(stats?.activeScore ?? 0), change: `${(stats?.activeScore as number) > 0 ? "+" : ""}${stats?.activeScore ?? 0} XP`, icon: Zap, accent: "text-violet-500 bg-violet-500/10" },
+    { label: "Problems Solved", value: String(stats?.problemsSolved ?? 0), change: pThisWeek > 0 ? `+${pThisWeek} this week` : "this week", icon: Code2, accent: "text-emerald-500 bg-emerald-500/10" },
+    { label: "Global Rank", value: `#${stats?.globalRank ?? "—"}`, change: `Top ${Math.max(1, Math.min(100, (stats?.globalRank as number) || 1))}`, icon: Trophy, accent: "text-amber-500 bg-amber-500/10" },
+    { label: "Jobs Applied", value: String(stats?.jobsApplied ?? 0), change: jThisWeek > 0 ? `+${jThisWeek} this week` : "this week", icon: Briefcase, accent: "text-orange-500 bg-orange-500/10" },
   ];
 
   // Build weekly activity data from XP history or fallback
@@ -165,20 +165,20 @@ export default function DashboardPage() {
     : [{ day: "Today", score: (user?.totalXP as number) || 0 }];
 
   return (
-    <div className="space-y-6 page-enter-stagger">
+    <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">Welcome back, {userName}! 👋</h1>
-          <p className="text-muted-foreground/70 mt-1.5">Here&apos;s your career progress overview.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Welcome back, {userName}</h1>
+          <p className="text-muted-foreground mt-1">Here&apos;s your career progress overview.</p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <Badge variant="outline" className="gap-1.5 px-3 py-1.5 rounded-xl border-border/40">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="gap-1.5 px-3 py-1.5 rounded-lg">
             <Calendar size={13} />
             {today}
           </Badge>
           {streak > 0 && (
-          <Badge className="gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0 shadow-[0_2px_8px_rgba(249,115,22,0.3)]">
+          <Badge variant="warning" className="gap-1.5 px-3 py-1.5 rounded-lg">
             <Flame size={13} />
             {streak} Day Streak
           </Badge>
@@ -186,43 +186,38 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats Cards - Bento Style */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
-          <Card key={stat.label} className="overflow-hidden group hover-lift hover-glow-border animate-fade-in-scale">
-            <CardContent className="p-5 relative">
-              {/* Subtle gradient accent */}
-              <div className={`absolute top-0 right-0 w-20 h-20 rounded-full bg-gradient-to-br ${stat.gradient} opacity-[0.06] blur-2xl group-hover:opacity-[0.12] transition-opacity duration-500`} />
-              <div className="flex items-center justify-between mb-4">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.gradient} text-white shadow-sm`}>
-                  <stat.icon size={17} />
+          <Card key={stat.label} className="group">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${stat.accent}`}>
+                  <stat.icon size={16} />
                 </div>
-                <Badge variant="outline" className="text-[10px] gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 font-semibold rounded-lg">
-                  <TrendingUp size={10} />
-                  {stat.change}
-                </Badge>
+                <span className="text-[11px] text-muted-foreground font-medium">{stat.change}</span>
               </div>
-              <div className="stat-number text-3xl">{stat.value}</div>
-              <p className="text-xs text-muted-foreground/60 mt-0.5 font-medium">{stat.label}</p>
+              <div className="stat-number text-2xl font-semibold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Quick Actions - Refined */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger-children">
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {quickActions.map((action) => (
           <Link key={action.label} href={action.href}>
-            <Card className="cursor-pointer hover-lift group border-border/40">
-              <CardContent className="p-4 flex items-center gap-3.5">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${action.color} text-white shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300`}>
+            <Card className="cursor-pointer group hover:border-border transition-colors">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${action.color} shrink-0`}>
                   <action.icon size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{action.label}</p>
-                  <p className="text-[10px] text-muted-foreground/50 font-medium">{action.desc}</p>
+                  <p className="text-sm font-medium truncate">{action.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{action.desc}</p>
                 </div>
-                <ArrowUpRight size={14} className="text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
+                <ArrowUpRight size={14} className="text-muted-foreground/40 group-hover:text-foreground transition-colors shrink-0" />
               </CardContent>
             </Card>
           </Link>
@@ -404,8 +399,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Profile Completion */}
-      <Card className="overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[hsl(var(--primary))] via-[hsl(238,70%,65%)] to-[hsl(var(--chart-4))]" />
+      <Card className="overflow-hidden">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -419,7 +413,7 @@ export default function DashboardPage() {
             </div>
             <span className="stat-number text-3xl text-primary">{profileCompletion}%</span>
           </div>
-          <Progress value={profileCompletion} className="h-2 rounded-full" indicatorClassName="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(238,70%,65%)] rounded-full" />
+          <Progress value={profileCompletion} className="h-2 rounded-full" indicatorClassName="bg-primary rounded-full" />
           <div className="flex flex-wrap gap-2 mt-4">
             {["Add Skills", "Upload Resume", "Link GitHub", "Set Career Goals"].map((task) => (
               <Badge key={task} variant="secondary" className="cursor-pointer hover:bg-primary/10 hover:text-primary transition-all duration-200 rounded-lg text-xs">

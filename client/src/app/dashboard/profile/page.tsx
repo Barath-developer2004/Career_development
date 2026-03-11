@@ -437,7 +437,7 @@ export default function ProfilePage() {
                   <Avatar className="h-24 w-24 ring-4 ring-background shadow-xl">
                     {p.avatar && (
                       <AvatarImage
-                        src={`${p.avatar.startsWith("http") ? p.avatar : `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:5000"}${p.avatar}`}${avatarKey ? `?v=${avatarKey}` : ""}`}
+                        src={`${p.avatar.startsWith("http") ? p.avatar : `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || ""}${p.avatar}`}${avatarKey ? `?v=${avatarKey}` : ""}`}
                         alt={p.fullName}
                       />
                     )}
@@ -626,7 +626,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2 shrink-0">
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-muted-foreground hover:text-blue-500" asChild>
                   <a
-                    href={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:5000"}${p.profileResume.filePath}`}
+                    href={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || ""}${p.profileResume.filePath}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

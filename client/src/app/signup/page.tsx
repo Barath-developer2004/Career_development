@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Lock, User, ArrowRight, Github, CheckCircle2, Sparkles, Zap, Trophy, FileText, Bot, Loader2, Briefcase, GraduationCap } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "";
 
 const benefits = [
   { icon: Bot, text: "AI-powered resume analysis & building" },
@@ -16,10 +19,12 @@ const benefits = [
   { icon: Sparkles, text: "Personalized learning roadmaps" },
 ];
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter();
-  const { signup, isLoading, error, clearError } = useAuthStore();
+  const searchParams = useSearchParams();
+  const { signup, oauthLogin, isLoading, error, clearError } = useAuthStore();
   const [selectedRole, setSelectedRole] = useState<string>("job_seeker");
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -27,19 +32,26 @@ export default function SignupPage() {
     confirmPassword: "",
   });
 
-  React.useEffect(() => {
-    // Read role from URL params or localStorage
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlRole = params.get("role");
     const storedRole = localStorage.getItem("selectedRole");
-    const role = urlRole || storedRole;
-    if (!role) {
-      router.push("/");
-      return;
-    }
+    const role = urlRole || storedRole || "job_seeker";
     setSelectedRole(role);
     localStorage.setItem("selectedRole", role);
-  }, [router]);
+  }, []);
+
+  // Handle OAuth callback codes
+  useEffect(() => {
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
+    if (code && (state === "google" || state === "github")) {
+      setOauthLoading(true);
+      oauthLogin(state, code)
+        .then(() => router.push("/dashboard"))
+        .catch(() => setOauthLoading(false));
+    }
+  }, [searchParams, oauthLogin, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -54,6 +66,37 @@ export default function SignupPage() {
     } catch {
       // Error is handled by store
     }
+  };
+
+  const handleGoogleSignup = () => {
+    if (!GOOGLE_CLIENT_ID) {
+      alert("Google OAuth is not configured. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in .env.local");
+      return;
+    }
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: `${window.location.origin}/signup`,
+      response_type: "code",
+      scope: "openid email profile",
+      state: "google",
+      access_type: "offline",
+      prompt: "consent",
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  };
+
+  const handleGitHubSignup = () => {
+    if (!GITHUB_CLIENT_ID) {
+      alert("GitHub OAuth is not configured. Set NEXT_PUBLIC_GITHUB_CLIENT_ID in .env.local");
+      return;
+    }
+    const params = new URLSearchParams({
+      client_id: GITHUB_CLIENT_ID,
+      redirect_uri: `${window.location.origin}/signup`,
+      scope: "user:email",
+      state: "github",
+    });
+    window.location.href = `https://github.com/login/oauth/authorize?${params}`;
   };
 
   return (
@@ -159,7 +202,7 @@ export default function SignupPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="gap-2 h-11" onClick={() => alert("Google sign-up coming soon!")}>
+            <Button variant="outline" className="gap-2 h-11" onClick={handleGoogleSignup} disabled={isLoading || oauthLoading}>
               <svg className="h-4 w-4" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -168,10 +211,16 @@ export default function SignupPage() {
               </svg>
               Google
             </Button>
-            <Button variant="outline" className="gap-2 h-11" onClick={() => alert("GitHub sign-up coming soon!")}>
+            <Button variant="outline" className="gap-2 h-11" onClick={handleGitHubSignup} disabled={isLoading || oauthLoading}>
               <Github size={16} /> GitHub
             </Button>
           </div>
+
+          {oauthLoading && (
+            <div className="flex items-center justify-center gap-2 mt-4 text-sm text-muted-foreground">
+              <Loader2 size={14} className="animate-spin" /> Completing sign-up...
+            </div>
+          )}
 
           <p className="text-center text-sm text-muted-foreground/60 mt-8">
             Already have an account?{" "}
@@ -182,5 +231,13 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 size={24} className="animate-spin text-primary" /></div>}>
+      <SignupContent />
+    </Suspense>
   );
 }

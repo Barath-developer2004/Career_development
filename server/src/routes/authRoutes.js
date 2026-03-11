@@ -12,6 +12,8 @@ const {
 // Public routes
 router.post("/signup", signupValidation, authController.signup);
 router.post("/login", loginValidation, authController.login);
+router.post("/google", authController.googleLogin);
+router.post("/github", authController.githubLogin);
 router.post("/forgot-password", forgotPasswordValidation, authController.forgotPassword);
 router.post("/reset-password/:token", resetPasswordValidation, authController.resetPassword);
 router.post("/refresh", authController.refreshToken);

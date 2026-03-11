@@ -76,6 +76,40 @@ exports.updateProfile = asyncHandler(async (req, res) => {
 });
 
 // ──────────────────────────────────────
+// PATCH /api/users/role
+// ──────────────────────────────────────
+exports.updateRole = asyncHandler(async (req, res) => {
+  const { role } = req.body;
+  if (!role || !["job_seeker", "higher_studies"].includes(role)) {
+    throw new AppError("Invalid role. Must be 'job_seeker' or 'higher_studies'", 400);
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { role },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) throw new AppError("User not found", 404);
+
+  // Log activity
+  await Activity.create({
+    user: user._id,
+    action: `Changed career path to ${role === "job_seeker" ? "Job Seeker" : "Higher Studies"}`,
+    type: "general",
+    xpEarned: 2,
+  });
+  user.totalXP += 2;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: "Career path updated successfully.",
+    data: { user },
+  });
+});
+
+// ──────────────────────────────────────
 // GET /api/users/stats
 // ──────────────────────────────────────
 exports.getStats = asyncHandler(async (req, res) => {
@@ -387,7 +421,7 @@ exports.uploadAvatar = asyncHandler(async (req, res) => {
   // Delete old avatar if it exists and is a local file
   if (user.avatar && user.avatar.startsWith("/uploads/avatars/")) {
     const oldPath = path.join(__dirname, "../../", user.avatar);
-    fs.unlink(oldPath, () => {});
+    fs.unlink(oldPath, () => { });
   }
 
   // Set new avatar URL (relative path served as static)
@@ -424,7 +458,7 @@ exports.uploadProfileResume = asyncHandler(async (req, res) => {
   // Delete old profile resume if exists
   if (user.profileResume?.filePath) {
     const oldPath = path.join(__dirname, "../../", user.profileResume.filePath);
-    fs.unlink(oldPath, () => {});
+    fs.unlink(oldPath, () => { });
   }
 
   const resumePath = `/uploads/profile-resumes/${req.file.filename}`;
@@ -460,7 +494,7 @@ exports.deleteProfileResume = asyncHandler(async (req, res) => {
 
   if (user.profileResume?.filePath) {
     const oldPath = path.join(__dirname, "../../", user.profileResume.filePath);
-    fs.unlink(oldPath, () => {});
+    fs.unlink(oldPath, () => { });
   }
 
   user.profileResume = { fileName: "", filePath: "", uploadedAt: null };

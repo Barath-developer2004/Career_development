@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import {
   Search, Briefcase, Building2,
   ExternalLink, TrendingUp,
   Users, Star, Loader2, Globe, ArrowRight,
+  CheckCircle, Clock, FileText,
 } from "lucide-react";
 import { jobService } from "@/lib/services";
 
@@ -18,6 +19,13 @@ interface Platform {
   color: string;
   url: string;
   description: string;
+}
+
+interface TrackedApplication {
+  platform: string;
+  query: string;
+  url: string;
+  appliedAt: string;
 }
 
 const platformLogos: Record<string, React.ReactNode> = {
@@ -42,12 +50,49 @@ const trendingSuggestions = [
   "Python Developer",
 ];
 
+function getStoredApplications(): TrackedApplication[] {
+  try {
+    return JSON.parse(localStorage.getItem("cx_job_applications") || "[]");
+  } catch { return []; }
+}
+
+function storeApplication(app: TrackedApplication) {
+  const apps = getStoredApplications();
+  // Avoid duplicates for same platform + query
+  const exists = apps.some((a) => a.platform === app.platform && a.url === app.url);
+  if (!exists) {
+    apps.unshift(app);
+    localStorage.setItem("cx_job_applications", JSON.stringify(apps.slice(0, 50)));
+  }
+}
+
 export default function JobsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [appliedPlatforms, setAppliedPlatforms] = useState<Set<string>>(new Set());
+  const [applyingPlatform, setApplyingPlatform] = useState<string | null>(null);
+  const [applications, setApplications] = useState<TrackedApplication[]>([]);
+  const [showSuccessMsg, setShowSuccessMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const apps = getStoredApplications();
+    setApplications(apps);
+    // Build set of applied platform names for quick lookup
+    const applied = new Set<string>();
+    apps.forEach((a) => applied.add(a.platform));
+    setAppliedPlatforms(applied);
+
+    // Restore last search so applied badges persist across navigation
+    const lastQuery = localStorage.getItem("cx_job_last_query");
+    if (lastQuery) {
+      setSearchTerm(lastQuery);
+      handleSearch(lastQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = async (q?: string) => {
     const query = q || searchTerm;
@@ -55,6 +100,7 @@ export default function JobsPage() {
     setLoading(true);
     setSearched(true);
     setSearchQuery(query);
+    localStorage.setItem("cx_job_last_query", query);
     try {
       const res = await jobService.searchExternal(query);
       setPlatforms(res.data?.platforms || []);
@@ -64,13 +110,43 @@ export default function JobsPage() {
     setLoading(false);
   };
 
+  const handleApplyNow = async (platform: Platform) => {
+    setApplyingPlatform(platform.name);
+
+    // Track application
+    const application: TrackedApplication = {
+      platform: platform.name,
+      query: searchQuery,
+      url: platform.url,
+      appliedAt: new Date().toISOString(),
+    };
+    storeApplication(application);
+
+    // Update applied set
+    setAppliedPlatforms((prev) => new Set([...prev, platform.name]));
+    setApplications(getStoredApplications());
+
+    // Show success message
+    setShowSuccessMsg(platform.name);
+    setTimeout(() => setShowSuccessMsg(null), 3000);
+
+    // Open external URL in new tab
+    window.open(platform.url, "_blank", "noopener,noreferrer");
+
+    setApplyingPlatform(null);
+  };
+
+  const isPlatformApplied = (platform: Platform) => {
+    return appliedPlatforms.has(platform.name);
+  };
+
   return (
     <div className="space-y-6 page-enter-stagger">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black tracking-tight">Job Finder</h1>
         <p className="text-muted-foreground/70">
-          Search across top job platforms. Find and apply to real opportunities in one place.
+          Search across top job platforms. We&apos;ll redirect you to apply directly on each platform.
         </p>
       </div>
 
@@ -119,6 +195,23 @@ export default function JobsPage() {
         </CardContent>
       </Card>
 
+      {/* Success toast */}
+      {showSuccessMsg && (
+        <div className="fixed top-6 right-6 z-50 animate-in slide-in-from-right-5 fade-in">
+          <Card className="border-emerald-500/30 bg-emerald-500/10 shadow-lg">
+            <CardContent className="p-4 flex items-center gap-3">
+              <CheckCircle size={18} className="text-emerald-500" />
+              <div>
+                <p className="text-sm font-semibold">{showSuccessMsg} Opened!</p>
+                <p className="text-xs text-muted-foreground">
+                  {showSuccessMsg} has been opened in a new tab. Find a job and apply there — we&apos;ll track it here for you.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-20">
@@ -137,15 +230,10 @@ export default function JobsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {platforms.map((platform) => (
-              <a
-                key={platform.name}
-                href={platform.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block group"
-              >
-                <Card className="h-full hover-lift transition-all cursor-pointer border-border/40 hover:border-primary/30 hover:shadow-lg">
+            {platforms.map((platform) => {
+              const applied = isPlatformApplied(platform);
+              return (
+                <Card key={platform.name} className={`h-full transition-all border-border/40 hover:shadow-lg ${applied ? "border-blue-500/30 bg-blue-500/5" : "hover:border-primary/30"}`}>
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
                       {/* Platform icon */}
@@ -158,10 +246,14 @@ export default function JobsPage() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <h3 className="font-bold group-hover:text-primary transition-colors">
+                          <h3 className="font-bold">
                             {platform.name}
                           </h3>
-                          <ExternalLink size={14} className="text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                          {applied && (
+                            <Badge variant="outline" className="text-xs text-blue-500 border-blue-500/40 gap-1">
+                              <ExternalLink size={10} /> Visited
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground mb-3">
                           {platform.description}
@@ -170,16 +262,34 @@ export default function JobsPage() {
                           <Badge variant="secondary" className="text-xs gap-1">
                             <Search size={10} /> {searchQuery}
                           </Badge>
-                          <span className="text-xs text-primary font-medium flex items-center gap-1 ml-auto group-hover:translate-x-1 transition-transform">
-                            View Jobs <ArrowRight size={12} />
-                          </span>
+                          <div className="flex items-center gap-2 ml-auto">
+                            <Button
+                              size="sm"
+                              variant={applied ? "outline" : "gradient"}
+                              className="gap-1.5 text-xs h-8"
+                              disabled={applyingPlatform === platform.name}
+                              onClick={() => handleApplyNow(platform)}
+                            >
+                              {applyingPlatform === platform.name ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : applied ? (
+                                <>
+                                  <ExternalLink size={12} /> Open Again
+                                </>
+                              ) : (
+                                <>
+                                  <ExternalLink size={12} /> Open &amp; Apply
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              </a>
-            ))}
+              );
+            })}
           </div>
 
           {/* Tip */}
@@ -189,15 +299,71 @@ export default function JobsPage() {
                 <Star size={14} className="text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Pro Tip</p>
+                <p className="text-sm font-medium">How It Works</p>
                 <p className="text-xs text-muted-foreground">
-                  Click on any platform above to search for &ldquo;{searchQuery}&rdquo; jobs directly on their site.
-                  You can apply, save, and track your applications on each platform. Try different job titles to explore more opportunities!
+                  Click &ldquo;Open &amp; Apply&rdquo; to go directly to the platform&apos;s job listings. Apply for jobs there — we&apos;ll
+                  track which platforms you&apos;ve visited so you can manage your job search progress below!
                 </p>
               </div>
             </CardContent>
           </Card>
         </>
+      )}
+
+      {/* Tracked Applications */}
+      {applications.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <FileText size={16} className="text-primary" />
+            Visited Platforms
+            <Badge variant="secondary" className="text-xs">{applications.length}</Badge>
+          </h2>
+          <p className="text-xs text-muted-foreground -mt-2">Platforms you&apos;ve opened — make sure to apply on each site!</p>
+          <div className="grid grid-cols-1 gap-2">
+            {applications.slice(0, 10).map((app, i) => (
+              <Card key={`${app.platform}-${i}`} className="hover-lift transition-all">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm shrink-0 text-xs font-bold"
+                    style={{ backgroundColor: platformLogos[app.platform.toLowerCase().split(" ")[0]] ? "#6c47ff" : "#666" }}
+                  >
+                    {app.platform.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{app.platform}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      Searched: &ldquo;{app.query}&rdquo;
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 text-xs text-blue-500">
+                        <ExternalLink size={10} /> Visited
+                      </div>
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Clock size={9} />
+                        {new Date(app.appliedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 text-xs h-7"
+                      onClick={() => window.open(app.url, "_blank", "noopener,noreferrer")}
+                    >
+                      <ExternalLink size={10} /> Open
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {applications.length > 10 && (
+            <p className="text-xs text-center text-muted-foreground">
+              Showing 10 of {applications.length} applications
+            </p>
+          )}
+        </div>
       )}
 
       {/* Empty initial state */}

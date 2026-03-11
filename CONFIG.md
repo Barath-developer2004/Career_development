@@ -29,17 +29,19 @@ JWT_REFRESH_EXPIRES_IN=7d
 # ── CORS ─────────────────────────────────
 CLIENT_URL=http://localhost:3000       # set to https://yourdomain.com in prod
 
-# ── OAuth (optional, not wired yet) ──────
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
+# ── OAuth (Google & GitHub login) ─────────
+GOOGLE_CLIENT_ID=              # From Google Cloud Console → OAuth 2.0
+GOOGLE_CLIENT_SECRET=          # From Google Cloud Console → OAuth 2.0
+GITHUB_CLIENT_ID=              # From GitHub → Settings → Developer → OAuth Apps
+GITHUB_CLIENT_SECRET=          # From GitHub → Settings → Developer → OAuth Apps
 ```
 
 ## Client — `d:\CareerX\client\.env.local`
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=  # Same as GOOGLE_CLIENT_ID above
+NEXT_PUBLIC_GITHUB_CLIENT_ID=  # Same as GITHUB_CLIENT_ID above
 ```
 
 ---
