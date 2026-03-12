@@ -385,7 +385,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
 // POST /api/auth/google — Google OAuth
 // ──────────────────────────────────────
 exports.googleLogin = asyncHandler(async (req, res) => {
-  const { code } = req.body;
+  const { code, redirectUri } = req.body;
   if (!code) throw new AppError("Authorization code is required", 400);
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -396,6 +396,9 @@ exports.googleLogin = asyncHandler(async (req, res) => {
     throw new AppError("Google OAuth is not configured on this server.", 500);
   }
 
+  // Use the redirect_uri sent by the frontend (must match what was used in the auth request)
+  const oauthRedirectUri = redirectUri || `${clientUrl}/login`;
+
   // Exchange authorization code for tokens
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -404,7 +407,7 @@ exports.googleLogin = asyncHandler(async (req, res) => {
       code,
       client_id: clientId,
       client_secret: clientSecret,
-      redirect_uri: `${clientUrl}/login`,
+      redirect_uri: oauthRedirectUri,
       grant_type: "authorization_code",
     }),
   });

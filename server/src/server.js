@@ -65,10 +65,22 @@ app.use(helmet());
 // Gzip compression
 app.use(compression());
 
-// CORS
+// CORS — support multiple frontend origins (comma-separated CLIENT_URL)
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:3000")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: (origin, callback) => {
+      // allow server-to-server (no origin) or any listed origin
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -153,9 +165,10 @@ app.get("/api/health", (req, res) => {
 
 // API routes
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"), {
-  setHeaders: (res) => {
+  setHeaders: (res, filePath, stat) => {
     res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-    res.setHeader("Access-Control-Allow-Origin", process.env.CLIENT_URL || "http://localhost:3000");
+    // Allow first listed origin for static files
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigins[0] || "*");
   },
 }));
 app.use("/api/auth", authRoutes);

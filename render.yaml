@@ -20,16 +20,28 @@ services:
       - key: MONGO_URI
         sync: false  # set manually in Render dashboard
       - key: JWT_SECRET
-        generateValue: true
+        sync: false  # set manually — must match across deploys
       - key: JWT_REFRESH_SECRET
-        generateValue: true
+        sync: false  # set manually — must match across deploys
       - key: JWT_EXPIRES_IN
         value: "15m"
       - key: JWT_REFRESH_EXPIRES_IN
         value: "7d"
       - key: CLIENT_URL
-        sync: false  # set to your Vercel frontend URL
+        sync: false  # e.g. https://career-development-eight.vercel.app
       - key: GEMINI_API_KEY
         sync: false
       - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: JDOODLE_CLIENT_ID
+        sync: false
+      - key: JDOODLE_CLIENT_SECRET
         sync: false

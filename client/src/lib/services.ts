@@ -101,7 +101,8 @@ export const authService = {
   },
 
   async googleLogin(code: string): Promise<AuthResponse> {
-    const { data } = await api.post("/auth/google", { code });
+    const redirectUri = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
+    const { data } = await api.post("/auth/google", { code, redirectUri });
     return data;
   },
 
