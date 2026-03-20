@@ -106,8 +106,7 @@ export default function Sidebar() {
     <aside
       className={cn(
         "fixed top-0 z-50 flex h-screen flex-col transition-all duration-500 ease-out",
-        "bg-gradient-to-b from-[hsl(232,18%,11%)] to-[hsl(232,18%,9%)]",
-        "text-sidebar-foreground border-r border-white/[0.06]",
+        "bg-background border-r border-border/60",
         // Desktop: left-0, controlled by collapsed state
         "max-lg:fixed max-lg:top-0 max-lg:h-full",
         collapsed ? "lg:w-[72px]" : "lg:w-[260px]",
@@ -117,13 +116,13 @@ export default function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-white/[0.06]">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-border/60">
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white font-bold text-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm">
             C
           </div>
           {!collapsed && (
-            <span className="text-lg font-bold tracking-tight text-white">
+            <span className="text-lg font-bold tracking-tight text-foreground">
               Career<span className="text-primary">X</span>
             </span>
           )}
@@ -134,7 +133,7 @@ export default function Sidebar() {
             if (mobileOpen) setMobileOpen(false);
             else setCollapsed(!collapsed);
           }}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-white/40 hover:bg-white/[0.08] hover:text-white/80 transition-all duration-200 cursor-pointer"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all duration-200 cursor-pointer"
         >
           {/* On mobile when open, show X; on desktop show collapse chevrons */}
           <span className="lg:hidden">{mobileOpen ? <X size={16} /> : null}</span>
@@ -144,11 +143,11 @@ export default function Sidebar() {
 
       {/* Role Switcher */}
       {!collapsed && (
-        <div className="px-4 py-3 border-b border-white/[0.04]">
+        <div className="px-4 py-3 border-b border-border/40">
           <div className="flex items-center justify-between mb-1.5 px-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-white/30">Current Path</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Current Path</span>
           </div>
-          <div className="flex gap-1.5 p-1 bg-black/20 rounded-xl border border-white/[0.04] relative">
+          <div className="flex gap-1.5 p-1 bg-muted/40 rounded-xl border border-border/40 relative">
             <button
               onClick={() => {
                 useAuthStore.getState().updateRole("job_seeker");
@@ -158,12 +157,12 @@ export default function Sidebar() {
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 relative overflow-hidden",
                 userRole === "job_seeker"
-                  ? "text-blue-400 bg-white/[0.06] shadow-sm border border-white/[0.08]"
-                  : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"
+                  ? "text-primary bg-primary/10 shadow-sm border border-primary/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
               )}
             >
               {userRole === "job_seeker" && (
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
               )}
               <Briefcase size={12} className="relative z-10" />
               <span className="relative z-10">Job Seeker</span>
@@ -177,8 +176,8 @@ export default function Sidebar() {
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 relative overflow-hidden",
                 userRole === "higher_studies"
-                  ? "text-teal-400 bg-white/[0.06] shadow-sm border border-white/[0.08]"
-                  : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"
+                  ? "text-teal-500 bg-teal-500/10 shadow-sm border border-teal-500/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
               )}
             >
               {userRole === "higher_studies" && (
@@ -196,7 +195,7 @@ export default function Sidebar() {
         {menuSections.map((section) => (
           <div key={section.label}>
             {!collapsed && (
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/20">
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">
                 {section.label}
               </p>
             )}
@@ -211,8 +210,8 @@ export default function Sidebar() {
                       className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-300 group relative",
                         isActive
-                          ? "bg-gradient-to-r from-primary/20 to-primary/5 text-white shadow-[inset_0_1px_0_hsl(var(--primary)/0.15)]"
-                          : "text-white/40 hover:bg-white/[0.04] hover:text-white/70"
+                          ? "bg-primary/10 text-foreground shadow-[inset_0_1px_0_hsl(var(--primary)/0.15)]"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                       )}
                       title={collapsed ? item.name : undefined}
                     >
@@ -223,7 +222,7 @@ export default function Sidebar() {
                         size={17}
                         className={cn(
                           "shrink-0 transition-colors",
-                          isActive ? "text-primary" : "text-white/30 group-hover:text-white/60"
+                          isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-muted-foreground"
                         )}
                       />
                       {!collapsed && (
@@ -239,27 +238,27 @@ export default function Sidebar() {
       </nav>
 
       {/* User Section */}
-      <div className="border-t border-white/[0.06] p-3">
-        <div className="flex items-center gap-3 rounded-xl p-2 hover:bg-white/[0.04] transition-all duration-300">
+      <div className="border-t border-border/60 p-3">
+        <div className="flex items-center gap-3 rounded-xl p-2 hover:bg-muted/50 transition-all duration-300">
           <Avatar className="h-8 w-8 ring-2 ring-primary/20">
-            <AvatarFallback className="text-xs bg-gradient-to-br from-primary/30 to-[hsl(238,65%,62%)]/20 text-primary font-bold">{initials}</AvatarFallback>
+            <AvatarFallback className="text-xs bg-gradient-to-br from-primary/30 to-primary/10 text-primary font-bold">{initials}</AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{user?.fullName || "User"}</p>
-              <p className="text-[10px] text-white/30 truncate">{user?.email || ""}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{user?.fullName || "User"}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{user?.email || ""}</p>
             </div>
           )}
           {!collapsed && (
             <div className="flex gap-0.5">
               <Link href="/dashboard/profile" onClick={() => setMobileOpen(false)}>
-                <button className="p-1.5 rounded-lg text-white/25 hover:bg-white/[0.08] hover:text-white/60 transition-all duration-200 cursor-pointer">
+                <button className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all duration-200 cursor-pointer">
                   <Settings size={13} />
                 </button>
               </Link>
               <button
                 onClick={handleLogout}
-                className="p-1.5 rounded-lg text-white/25 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 cursor-pointer"
+                className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all duration-200 cursor-pointer"
               >
                 <LogOut size={13} />
               </button>

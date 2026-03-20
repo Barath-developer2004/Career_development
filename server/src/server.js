@@ -49,6 +49,7 @@ const searchRoutes = require("./routes/searchRoutes");
 const roadmapRoutes = require("./routes/roadmapRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const higherEdRoutes = require("./routes/higherEdRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 
@@ -186,6 +187,10 @@ app.use("/api/search", searchRoutes);
 app.use("/api/roadmap", roadmapRoutes);
 app.use("/api/coding-profile", profileRoutes);
 app.use("/api/higher-ed", higherEdRoutes);
+app.use("/api/notifications", notificationRoutes);
+
+// Debug: log registered routes
+console.log("✓ Notification routes registered at /api/notifications");
 
 // 404 handler
 app.use("*", (req, res) => {
